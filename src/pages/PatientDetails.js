@@ -35,11 +35,10 @@ const PatientDetails = ({ match, client, history }) => {
         type: 'text/plain;charset=utf-8'
       });
       console.dir(saveAs);
-      const url = saveAs(
+      saveAs(
         blob,
         `${patientDetails.firstName}_${patientDetails.lastName}.txt`
-      ).get_URL();
-      console.log(url);
+      );
     }
   };
 
