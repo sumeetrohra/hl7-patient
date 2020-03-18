@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { withApollo } from 'react-apollo';
 import gql from 'graphql-tag';
-import { Button } from 'react-bootstrap';
+import { Button, Form } from 'react-bootstrap';
 import { withRouter } from 'react-router-dom';
+import saveAs from 'save-as';
 
 const PatientDetails = ({ match, client, history }) => {
   const [patientDetails, setPatientDetails] = useState(null);
+  const [textDetails, setTextDetails] = useState('');
 
   useEffect(() => {
     async function getDetails() {
@@ -17,6 +19,29 @@ const PatientDetails = ({ match, client, history }) => {
     }
     getDetails();
   });
+
+  useEffect(() => {
+    if (patientDetails) {
+      const detailsDiv = document.querySelector('#hl7-data');
+      setTextDetails(detailsDiv.innerText);
+    }
+  }, [patientDetails]);
+
+  const [email, setEmail] = useState('');
+
+  const handleDownload = () => {
+    if (textDetails) {
+      var blob = new Blob([textDetails], {
+        type: 'text/plain;charset=utf-8'
+      });
+      console.dir(saveAs);
+      const url = saveAs(
+        blob,
+        `${patientDetails.firstName}_${patientDetails.lastName}.txt`
+      ).get_URL();
+      console.log(url);
+    }
+  };
 
   const GET_PATIENT_QUERY = gql`
     query getPatientData {
@@ -140,30 +165,32 @@ const PatientDetails = ({ match, client, history }) => {
 
   return (
     <>
-      <h3>Patient Details</h3>
+      <div id="hl7-data">
+        <h3>Patient Details</h3>
 
-      {patientDetails && (
-        <>
-          <MSHMessage
-            version="2.5"
-            countryCode={patientDetails.countryCode}
-            language="English"
-          />
-          <PIDMessage patientDetails={patientDetails} />
-        </>
-      )}
-      {patientDetails &&
-        patientDetails.patientCase &&
-        records.length > 0 &&
-        records.map((record, index) => (
-          <EVNMessage key={index} record={record} />
-        ))}
-      {patientDetails && patientDetails.careProvider && (
-        <NK1Message careProvider={patientDetails.careProvider} />
-      )}
-      {patientDetails && patientDetails.patientCase && patientDetails && (
-        <DG1Message patientCase={patientDetails.patientCase} />
-      )}
+        {patientDetails && (
+          <>
+            <MSHMessage
+              version="2.5"
+              countryCode={patientDetails.countryCode}
+              language="English"
+            />
+            <PIDMessage patientDetails={patientDetails} />
+          </>
+        )}
+        {patientDetails &&
+          patientDetails.patientCase &&
+          records.length > 0 &&
+          records.map((record, index) => (
+            <EVNMessage key={index} record={record} />
+          ))}
+        {patientDetails && patientDetails.careProvider && (
+          <NK1Message careProvider={patientDetails.careProvider} />
+        )}
+        {patientDetails && patientDetails.patientCase && patientDetails && (
+          <DG1Message patientCase={patientDetails.patientCase} />
+        )}
+      </div>
       {patientDetails && !patientDetails.careProvider ? (
         <Button onClick={() => history.push('/add/careprovider')}>
           Add Care Provider
@@ -173,6 +200,7 @@ const PatientDetails = ({ match, client, history }) => {
           Update Care Provider
         </Button>
       )}
+      {'  '}
       {patientDetails && !patientDetails.insurance ? (
         <Button onClick={() => history.push('/add/insurance')}>
           Add Insurance
@@ -182,9 +210,33 @@ const PatientDetails = ({ match, client, history }) => {
           Update Insurance
         </Button>
       )}
+      {'  '}
+      {patientDetails && (
+        <>
+          <Button onClick={handleDownload}>Download</Button>
+          <br />
+          <Form>
+            <Form.Group>
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="text"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+            </Form.Group>
+          </Form>
+          <Button
+            style={{ color: '#fff', opacity: email === '' ? 0.7 : 1 }}
+            as="a"
+          >
+            Share
+          </Button>
+        </>
+      )}
     </>
   );
 };
+// TODO: share is incomplete
 
 export default withRouter(withApollo(PatientDetails));
 
@@ -215,7 +267,7 @@ const PIDMessage = ({ patientDetails }) => {
     birthPlace
   } = patientDetails;
   return (
-    <p>{`PID | ${id} | | | | ${lastName}^${firstName}^${middleName} | ${motherName} | ${dob} | ${sex} | | | ${address} | ${countryCode} | ${contact1} | ${contact2} | ${primaryLanguage} | ${maritalStatus} | ${religion} | | | | | ${birthPlace} | |  | ${countryCode} | | ${countryCode}`}</p>
+    <p>{`PID | ${id} | | | | ${lastName}^${firstName}^${middleName} | ${motherName} | ${dob} | ${sex} | | | ${address} | ${countryCode} | ${contact1} | ${contact2} | ${primaryLanguage} | ${maritalStatus} | ${religion} | | | | | ${birthPlace} | | | ${countryCode} | | ${countryCode}`}</p>
   );
 };
 
