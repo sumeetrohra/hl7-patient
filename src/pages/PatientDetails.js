@@ -125,6 +125,7 @@ const PatientDetails = ({ match, client, history }) => {
           records {
             id
             visitNo
+            eventType
             encounterDate
             mp {
               id
@@ -151,6 +152,11 @@ const PatientDetails = ({ match, client, history }) => {
             advice
             query
             followUpObservation
+            files {
+              id
+              name
+              url
+            }
           }
         }
       }
@@ -239,15 +245,49 @@ const PatientDetails = ({ match, client, history }) => {
 
 export default withRouter(withApollo(PatientDetails));
 
-// message header
-const MSHMessage = ({ version, countryCode, language }) => {
+const EntityDiv = ({ children, onClick }) => {
   return (
-    <p>{`MSH | ^ ~ \\ & | | | | | ${Date.now()} | | | | | ${version} | | | | | ${countryCode} | | ${language}`}</p>
+    <div
+      style={{
+        border: '1px solid black',
+        borderRadius: '5px',
+        margin: '5px',
+        padding: '5px',
+        cursor: onClick ? 'pointer' : 'null'
+      }}
+      onClick={onClick}
+    >
+      {children}
+    </div>
   );
+};
+
+// message header
+const MSHMessage = ({ version, countryCode, language, date }) => {
+  return (
+    <EntityDiv>
+      <p>{`MSH | ^ ~ \\ & | | | | | ${Date.parse(
+        date
+      )} | | | | | ${version} | | | | | ${countryCode} | | ${language}`}</p>
+    </EntityDiv>
+  );
+};
+
+const GetEntityDetails = object => {
+  return Object.keys(object)
+    .filter(key => key !== '__typename')
+    .filter(
+      key =>
+        object[key] === null || (object[key] && typeof object[key] !== 'object')
+    )
+    .map((key, i) => <li key={i}>{`${key}: ${object[key] || 'N/A'}`}</li>);
 };
 
 // patient details
 const PIDMessage = ({ patientDetails }) => {
+  const [showDetails, setShowDetails] = useState(false);
+  console.log(patientDetails);
+
   const {
     id,
     lastName,
@@ -266,12 +306,21 @@ const PIDMessage = ({ patientDetails }) => {
     birthPlace
   } = patientDetails;
   return (
-    <p>{`PID | ${id} | | | | ${lastName}^${firstName}^${middleName} | ${motherName} | ${dob} | ${sex} | | | ${address} | ${countryCode} | ${contact1} | ${contact2} | ${primaryLanguage} | ${maritalStatus} | ${religion} | | | | | ${birthPlace} | | | ${countryCode} | | ${countryCode}`}</p>
+    <>
+      <EntityDiv onClick={() => setShowDetails(!showDetails)}>
+        <p>{`PID | ${id} | | | | ${lastName}^${firstName}^${middleName} | ${motherName} | ${dob} | ${sex} | | | ${address} | ${countryCode} | ${contact1} | ${contact2} | ${primaryLanguage} | ${maritalStatus} | ${religion} | | | | | ${birthPlace} | |  | ${countryCode} | | ${countryCode}`}</p>
+      </EntityDiv>
+      <ul style={{ display: showDetails ? 'inherit' : 'none' }}>
+        {GetEntityDetails(patientDetails)}
+      </ul>
+    </>
   );
 };
 
 // care provider
 const NK1Message = ({ careProvider }) => {
+  const [showDetails, setShowDetails] = useState(false);
+
   const {
     firstName,
     lastName,
@@ -282,44 +331,100 @@ const NK1Message = ({ careProvider }) => {
     countryCode
   } = careProvider;
   return (
-    <p>{`NK1 | ${lastName}^${firstName}^${middleName} | | ${address} | ${contact1} | ${email} | | | | | | | | | | | | | ${countryCode} | | | | | | | | ${countryCode} | | | | | | | | | | `}</p>
+    <>
+      <EntityDiv onClick={() => setShowDetails(!showDetails)}>
+        <p>{`NK1 | ${lastName}^${firstName}^${middleName} | | ${address} | ${contact1} | ${email} | | | | | | | | | | | | | ${countryCode} | | | | | | | | ${countryCode} | | | | | | | | | | `}</p>
+      </EntityDiv>
+      <ul style={{ display: showDetails ? 'inherit' : 'none' }}>
+        {GetEntityDetails(careProvider)}
+      </ul>
+    </>
   );
 };
 
 // patient case
 const DG1Message = ({ patientCase }) => {
+  const [showDetails, setShowDetails] = useState(false);
+
   const {
     id,
     icdCode: { icdCode },
     icdSubCode: { icdSubCode },
-    mp
+    mp,
+    hospital
   } = patientCase;
   return (
-    <p>{`DG1 | ${id} | ICD | ${icdCode} - ${icdSubCode} | | | | | | | | | | | | | ${mp.id}`}</p>
+    <>
+      <EntityDiv onClick={() => setShowDetails(!showDetails)}>
+        <p>{`DG1 | ${id} | ICD | ${icdCode} - ${icdSubCode} | | | | | | | | | | | | | ${mp.id}`}</p>
+      </EntityDiv>
+      <ul style={{ display: showDetails ? 'inherit' : 'none' }}>
+        {GetEntityDetails({
+          ...patientCase,
+          icdCode: icdCode.icdCode,
+          icdSubCode: icdSubCode.icdSubCode,
+          mp: mp.mpId,
+          hospital: hospital.id
+        })}
+      </ul>
+    </>
   );
 };
 
 // records
-// TODO: <p>EVN</p> missing
 const EVNMessage = ({ record }) => {
+  const [showDetails, setShowDetails] = useState(false);
+
   const {
     id,
+    eventType,
     encounterDate,
     cevsSp,
     cevsDp,
     cePr,
     ceRr,
     ceHeight,
-    ceWeight
+    ceWeight,
+    files,
+    mp,
+    hospital
   } = record;
   return (
     <>
-      <p>{`OBX | ${id} | | 1 | | ${cevsSp} | mm of Hg | | | | | | | | '${encounterDate}' UTC`}</p>
-      <p>{`OBX | ${id} | | 1 | | ${cevsDp} | mm of Hg | | | | | | | | '${encounterDate}' UTC`}</p>
-      <p>{`OBX | ${id} | | 1 | | ${cePr} | beats per minute | | | | | | | | '${encounterDate}' UTC`}</p>
-      <p>{`OBX | ${id} | | 1 | | ${ceRr} | breaths per minute | | | | | | | | '${encounterDate}' UTC`}</p>
-      <p>{`OBX | ${id} | | 1 | | ${ceHeight} | cm | | | | | | | | '${encounterDate}' UTC`}</p>
-      <p>{`OBX | ${id} | | 1 | | ${ceWeight} | kg | | | | | | | | '${encounterDate}' UTC`}</p>
+      <EntityDiv onClick={() => setShowDetails(!showDetails)}>
+        <p>{`EVN | ADT | ${Date.parse(encounterDate)} | | | | ${eventType}`}</p>
+        <p>{`OBX | ${id} | | 1 | | ${cevsSp} | mm of Hg | | | | | | | | '${encounterDate}' UTC`}</p>
+        <p>{`OBX | ${id} | | 1 | | ${cevsDp} | mm of Hg | | | | | | | | '${encounterDate}' UTC`}</p>
+        <p>{`OBX | ${id} | | 1 | | ${cePr} | beats per minute | | | | | | | | '${encounterDate}' UTC`}</p>
+        <p>{`OBX | ${id} | | 1 | | ${ceRr} | breaths per minute | | | | | | | | '${encounterDate}' UTC`}</p>
+        <p>{`OBX | ${id} | | 1 | | ${ceHeight} | cm | | | | | | | | '${encounterDate}' UTC`}</p>
+        <p>{`OBX | ${id} | | 1 | | ${ceWeight} | kg | | | | | | | | '${encounterDate}' UTC`}</p>
+        <p>Files:</p>
+        <ul>
+          {files.map(file => (
+            <li key={file.id}>
+              {file.name}:{' '}
+              <a href={file.url} target="_blank" rel="noopener noreferrer">
+                {file.url}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </EntityDiv>
+      <ul style={{ display: showDetails ? 'inherit' : 'none' }}>
+        {GetEntityDetails({ ...record, mp: mp.mpId, hospital: hospital.id })}
+        <li>Files:</li>
+        <ul>
+          {files.map(file => (
+            <li key={file.id}>
+              {file.name}:{' '}
+              <a href={file.url} target="_blank" rel="noopener noreferrer">
+                {file.url}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </ul>
     </>
   );
 };
