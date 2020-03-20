@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { withApollo } from 'react-apollo';
 import gql from 'graphql-tag';
-import { Button, Form } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 import { withRouter } from 'react-router-dom';
 import saveAs from 'save-as';
 
@@ -26,8 +26,6 @@ const PatientDetails = ({ match, client, history }) => {
       setTextDetails(detailsDiv.innerText);
     }
   }, [patientDetails]);
-
-  const [email, setEmail] = useState('');
 
   const handleDownload = () => {
     if (textDetails) {
@@ -216,32 +214,10 @@ const PatientDetails = ({ match, client, history }) => {
         </Button>
       )}
       {'  '}
-      {patientDetails && (
-        <>
-          <Button onClick={handleDownload}>Download</Button>
-          <br />
-          <Form>
-            <Form.Group>
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="text"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-              />
-            </Form.Group>
-          </Form>
-          <Button
-            style={{ color: '#fff', opacity: email === '' ? 0.7 : 1 }}
-            as="a"
-          >
-            Share
-          </Button>
-        </>
-      )}
+      {patientDetails && <Button onClick={handleDownload}>Download</Button>}
     </>
   );
 };
-// TODO: share is incomplete
 
 export default withRouter(withApollo(PatientDetails));
 
@@ -286,7 +262,6 @@ const GetEntityDetails = object => {
 // patient details
 const PIDMessage = ({ patientDetails }) => {
   const [showDetails, setShowDetails] = useState(false);
-  console.log(patientDetails);
 
   const {
     id,
@@ -399,17 +374,6 @@ const EVNMessage = ({ record }) => {
         <p>{`OBX | ${id} | | 1 | | ${ceRr} | breaths per minute | | | | | | | | '${encounterDate}' UTC`}</p>
         <p>{`OBX | ${id} | | 1 | | ${ceHeight} | cm | | | | | | | | '${encounterDate}' UTC`}</p>
         <p>{`OBX | ${id} | | 1 | | ${ceWeight} | kg | | | | | | | | '${encounterDate}' UTC`}</p>
-        <p>Files:</p>
-        <ul>
-          {files.map(file => (
-            <li key={file.id}>
-              {file.name}:{' '}
-              <a href={file.url} target="_blank" rel="noopener noreferrer">
-                {file.url}
-              </a>
-            </li>
-          ))}
-        </ul>
       </EntityDiv>
       <ul style={{ display: showDetails ? 'inherit' : 'none' }}>
         {GetEntityDetails({ ...record, mp: mp.mpId, hospital: hospital.id })}
