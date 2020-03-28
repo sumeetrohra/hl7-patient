@@ -5,6 +5,8 @@ import { Mutation } from 'react-apollo';
 
 import { SET_PATIENT } from '../constants';
 import { AuthContext } from '../AuthConfig';
+import Spinner from '../components/Spinner';
+import { validateEmail } from '../utils';
 
 const LoginPage = ({ history }) => {
   const handleSubmit = event => {
@@ -22,16 +24,17 @@ const LoginPage = ({ history }) => {
   `;
 
   const _onLogin = data => {
-    console.log(data);
     authDispatch({
       type: SET_PATIENT,
       payload: data.patientLogin
     });
+    setLoading(false);
   };
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   return (
     <Form onSubmit={handleSubmit}>
@@ -62,11 +65,28 @@ const LoginPage = ({ history }) => {
         mutation={PATIENT_LOGIN_MUTATION}
         variables={{ email, password }}
         onCompleted={data => _onLogin(data)}
-        onError={() => setError('Invalid email or password')}
+        onError={() => {
+          setError('Invalid email or password');
+          setLoading(false);
+        }}
       >
-        {mutation => (
-          <Button variant="primary" type="submit" onClick={mutation}>
-            Submit
+        {patientLogin => (
+          <Button
+            variant="primary"
+            style={{ opacity: loading ? 0.7 : 1 }}
+            disabled={loading ? true : false}
+            type="submit"
+            onClick={() => {
+              setError();
+              if (validateEmail(email) && password) {
+                setLoading(true);
+                patientLogin();
+              } else {
+                setError('please enter valid data');
+              }
+            }}
+          >
+            {loading ? <Spinner /> : 'Login'}
           </Button>
         )}
       </Mutation>

@@ -4,6 +4,9 @@ import { Mutation } from 'react-apollo';
 import gql from 'graphql-tag';
 import { withRouter } from 'react-router-dom';
 
+import { validateEmail, validatePhoneNumber } from '../utils';
+import Spinner from '../components/Spinner';
+
 const AddCareProvider = ({ history }) => {
   const [fname, setFname] = useState('');
   const [lname, setLname] = useState('');
@@ -15,6 +18,9 @@ const AddCareProvider = ({ history }) => {
   const [stateId, setStateId] = useState();
   const [pinCode, setPinCode] = useState();
   const [countryCode, setCountryCode] = useState();
+
+  const [error, setError] = useState();
+  const [loading, setLoading] = useState(false);
 
   const ADD_CARE_PROVIDER_MUTATION = gql`
     mutation addCareProvider(
@@ -141,6 +147,7 @@ const AddCareProvider = ({ history }) => {
           />
         </Form.Group>
 
+        <p style={{ color: 'red' }}>{error}</p>
         <Mutation
           mutation={ADD_CARE_PROVIDER_MUTATION}
           variables={{
@@ -155,12 +162,40 @@ const AddCareProvider = ({ history }) => {
             contact1: contact1,
             email: email
           }}
-          onCompleted={() => history.push('/')}
+          onCompleted={() => {
+            setError();
+            setLoading(false);
+            history.push('/');
+          }}
           onError={error => console.error(error)}
         >
           {addCareProvider => (
-            <Button variant="primary" onClick={addCareProvider}>
-              Add Care Provider
+            <Button
+              variant="primary"
+              style={{ opacity: loading ? 0.7 : 1 }}
+              disabled={loading ? true : false}
+              onClick={() => {
+                setError();
+                if (
+                  fname &&
+                  lname &&
+                  midName &&
+                  address &&
+                  cityId &&
+                  stateId &&
+                  pinCode &&
+                  countryCode &&
+                  validatePhoneNumber(contact1) &&
+                  validateEmail(email)
+                ) {
+                  setLoading(true);
+                  addCareProvider();
+                } else {
+                  setError('please enter all details first');
+                }
+              }}
+            >
+              {loading ? <Spinner /> : 'Add Care Provider'}
             </Button>
           )}
         </Mutation>

@@ -8,19 +8,24 @@ import 'firebase/storage';
 
 import { GET_PATIENT_QUERY } from './getPatientQuery';
 import { validateEmail } from '../utils';
+import Spinner from '../components/Spinner';
 
 const PatientDetails = ({ match, client, history }) => {
   const [patientDetails, setPatientDetails] = useState(null);
   const [textDetails, setTextDetails] = useState('');
   const [email, setEmail] = useState('');
 
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     async function getDetails() {
+      setLoading(false);
       const result = await client.query({
         query: GET_PATIENT_QUERY,
         fetchPolicy: 'network-only'
       });
       setPatientDetails(result.data.getPatientData);
+      setLoading(false);
     }
     getDetails();
   });
@@ -46,21 +51,28 @@ const PatientDetails = ({ match, client, history }) => {
   };
 
   const handleEmailShare = async () => {
-    if (textDetails) {
-      var blob = new Blob([textDetails], {
-        type: 'text/plain;charset=utf-8'
-      });
-      const { id, firstName, lastName } = patientDetails;
-      const storageRef = firebase
-        .storage()
-        .ref()
-        .child(`${id}_${Date.now()}`);
-      const snapshot = await storageRef.put(blob);
-      const fileUrl = await snapshot.ref.getDownloadURL();
-      console.log(fileUrl);
-      window.open(
-        `mailto:${email}?subject=HL7 reports for ${firstName} ${lastName}&body=HL7 file can be found at this url: ${fileUrl}`
-      );
+    try {
+      setLoading(true);
+      if (textDetails) {
+        var blob = new Blob([textDetails], {
+          type: 'text/plain;charset=utf-8'
+        });
+        const { id, firstName, lastName } = patientDetails;
+        const storageRef = firebase
+          .storage()
+          .ref()
+          .child(`${id}_${Date.now()}`);
+        const snapshot = await storageRef.put(blob);
+        const fileUrl = await snapshot.ref.getDownloadURL();
+        console.log(fileUrl);
+        window.open(
+          `mailto:${email}?subject=HL7 reports for ${firstName} ${lastName}&body=HL7 file can be found at this url: ${fileUrl}`
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -72,7 +84,7 @@ const PatientDetails = ({ match, client, history }) => {
   return (
     <>
       <div id="hl7-data">
-        <h3>Patient Details</h3>
+        {patientDetails ? <h3>Patient Details</h3> : <Spinner />}
 
         {patientDetails && (
           <>
@@ -133,11 +145,16 @@ const PatientDetails = ({ match, client, history }) => {
             </Form.Group>
           </Form>
           <Button
-            onClick={handleEmailShare}
-            style={{ opacity: validateEmail(email) ? 1 : 0.7 }}
+            onClick={() => {
+              if (validateEmail(email)) {
+                setLoading(true);
+                handleEmailShare();
+              }
+            }}
+            style={{ opacity: validateEmail(email) && !loading ? 1 : 0.7 }}
             disabled={validateEmail(email) ? false : true}
           >
-            Share with Email
+            {loading ? <Spinner /> : 'Share with Email'}
           </Button>
         </>
       )}

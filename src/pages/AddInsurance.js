@@ -4,9 +4,14 @@ import { Mutation } from 'react-apollo';
 import gql from 'graphql-tag';
 import { withRouter } from 'react-router-dom';
 
+import Spinner from '../components/Spinner';
+
 const AddInsurance = ({ history }) => {
   const [insuranceStatus, setInsuranceStatus] = useState(null);
   const [name, setName] = useState('');
+
+  const [error, setError] = useState();
+  const [loading, setLoading] = useState(false);
 
   const ADD_INSURANCE_MUTATION = gql`
     mutation addInsurance($status: Boolean!, $companyName: String!) {
@@ -42,15 +47,33 @@ const AddInsurance = ({ history }) => {
             required
           />
         </Form.Group>
+        <p style={{ color: 'red' }}>{error}</p>
         <Mutation
           mutation={ADD_INSURANCE_MUTATION}
           variables={{ status: insuranceStatus, companyName: name }}
-          onCompleted={data => history.push('/')}
+          onCompleted={() => {
+            setError();
+            setLoading(false);
+            history.push('/');
+          }}
           onError={error => console.error(error)}
         >
           {addInsurance => (
-            <Button variant="primary" onClick={addInsurance}>
-              Add Insurance
+            <Button
+              variant="primary"
+              style={{ opacity: loading ? 0.7 : 1 }}
+              disabled={loading ? true : false}
+              onClick={() => {
+                setError();
+                if (insuranceStatus && name) {
+                  setLoading(true);
+                  addInsurance();
+                } else {
+                  setError('please enter all details first');
+                }
+              }}
+            >
+              {loading ? <Spinner /> : 'Add Insurance'}
             </Button>
           )}
         </Mutation>
