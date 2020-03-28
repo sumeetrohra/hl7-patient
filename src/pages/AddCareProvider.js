@@ -48,7 +48,7 @@ const AddCareProvider = ({ history }) => {
 
   return (
     <>
-      <h3>Add Insurance</h3>
+      <h3>Add Care Provider</h3>
       <Form>
         <Form.Group>
           <Form.Label>First Name</Form.Label>
