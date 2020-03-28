@@ -40,7 +40,7 @@ function App() {
     <BrowserRouter>
       <ApolloProvider client={client}>
         <Header />
-        <Container>
+        <Container style={{ marginBottom: '30px' }}>
           <Router />
         </Container>
       </ApolloProvider>
