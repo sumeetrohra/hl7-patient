@@ -3,15 +3,20 @@ import gql from 'graphql-tag';
 import { Mutation } from 'react-apollo';
 import { Card, Button } from 'react-bootstrap';
 
+import Spinner from '../components/Spinner';
+
 const RequestCard = ({
   request: {
     medicalPractitionerFirstName,
     medicalPractitionerLastName,
     medicalPractitionerId,
     id
-  }
+  },
+  loadingStates
 }) => {
   const [error, setError] = useState('');
+
+  const { loading, setLoading } = loadingStates;
 
   const ACCEPT_REQUEST_MUTATION = gql`
     mutation acceptAccessRequest($accessRequestId: String!) {
@@ -40,25 +45,51 @@ const RequestCard = ({
           variables={{ accessRequestId: id }}
           onCompleted={res => {
             console.log(res);
+            setLoading(false);
           }}
-          onError={() => setError('Some error occured')}
+          onError={() => {
+            setError('Some error occurred');
+            setLoading(false);
+          }}
         >
           {acceptAccessRequest => (
-            <Button variant="primary" onClick={acceptAccessRequest}>
-              Accept Request
+            <Button
+              variant="primary"
+              style={{ opacity: loading ? 0.7 : 1 }}
+              disabled={loading ? true : false}
+              onClick={() => {
+                setLoading(true);
+                acceptAccessRequest();
+              }}
+            >
+              {loading ? <Spinner /> : 'Accept Request'}
             </Button>
           )}
         </Mutation>
+        {'  '}
         <Mutation
           mutation={DENY_REQUEST_MUTATION}
           variables={{ accessRequestId: id }}
           onCompleted={res => {
             console.log(res);
+            setLoading(false);
+          }}
+          onError={() => {
+            setError('Some error occurred');
+            setLoading(false);
           }}
         >
           {denyAccessRequest => (
-            <Button variant="danger" onClick={denyAccessRequest}>
-              Deny Request
+            <Button
+              variant="danger"
+              style={{ opacity: loading ? 0.7 : 1 }}
+              disabled={loading ? true : false}
+              onClick={() => {
+                setLoading(true);
+                denyAccessRequest();
+              }}
+            >
+              {loading ? <Spinner /> : 'Deny Request'}
             </Button>
           )}
         </Mutation>
